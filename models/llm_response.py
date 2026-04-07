@@ -29,6 +29,15 @@ class StateUpdate(BaseModel):
     quest_updates: list[dict | str] = Field(default_factory=list)
     # [{"source": "NPC_Name", "target": "Faction_Name", "type": "Enemy", "weight": 0.8}]
     relationship_changes: list[dict] = Field(default_factory=list)
+    
+    # NPC Social Updates
+    npc_interacted_name: Optional[str] = None
+    npc_relationship_change: int = 0
+    npc_memory_summary: Optional[str] = None
+    
+    # Faction Social Updates
+    faction_interacted_name: Optional[str] = None
+    faction_relationship_change: int = 0
 
 
 class LLMResponse(BaseModel):

@@ -106,9 +106,10 @@ class OllamaClient:
 
     def send_turn(self, player: dict, world: dict, active_quest: dict | None,
                   action: str, dice_str: str, story_context: str,
-                  location: dict | None = None, rules: dict | None = None) -> LLMResponse:
+                  location: dict | None = None, rules: dict | None = None,
+                  npc_context: str = "") -> LLMResponse:
         user = T.turn_user(player, world, active_quest, action, dice_str, story_context,
-                           location=location, rules=rules)
+                           location=location, rules=rules, npc_context=npc_context)
         raw  = self._call(T.TURN_SYSTEM, user)
         return self._safe_llm_response(raw)
 

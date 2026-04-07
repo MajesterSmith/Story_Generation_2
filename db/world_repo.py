@@ -102,6 +102,58 @@ def update_npc_health(npc_id: int, health: int):
         conn.execute("UPDATE npcs SET health = ? WHERE id = ?", (health, npc_id))
 
 
+def update_npc_relationship(npc_id: int, change: int):
+    with get_db() as conn:
+        conn.execute("UPDATE npcs SET relationship_score = relationship_score + ? WHERE id = ?", (change, npc_id))
+
+
+def update_faction_relationship(faction_id: int, change: int):
+    with get_db() as conn:
+        conn.execute("UPDATE factions SET relationship_score = relationship_score + ? WHERE id = ?", (change, faction_id))
+
+
+# ── Memories ──────────────────────────────────────────────────────────────────
+
+def add_npc_memory(npc_id: int, world_id: int, turn_num: int, summary: str, impact: int):
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO npc_memories (npc_id, world_id, turn_number, event_summary, impact_score)
+               VALUES (?,?,?,?,?)""",
+            (npc_id, world_id, turn_num, summary, impact)
+        )
+
+
+def get_npc_memories(npc_id: int, world_id: int, limit: int = 3) -> list[dict]:
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT * FROM npc_memories 
+               WHERE npc_id = ? AND world_id = ? 
+               ORDER BY id DESC LIMIT ?""",
+            (npc_id, world_id, limit)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_known_npcs(world_id: int) -> list[dict]:
+    """Return NPCs that have a non-zero relationship or existing memories."""
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT n.*, f.name AS faction_name
+               FROM npcs n
+               LEFT JOIN factions f ON n.faction_id = f.id
+               WHERE n.world_id = ? AND (n.relationship_score != 0 OR n.id IN (SELECT npc_id FROM npc_memories))
+               ORDER BY n.relationship_score DESC""",
+            (world_id,)
+        ).fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["traits"]     = json.loads(d.get("traits", "[]"))
+            d["shop_items"] = json.loads(d.get("shop_items", "[]"))
+            result.append(d)
+        return result
+
+
 # ── Geography ─────────────────────────────────────────────────────────────────
 
 def create_location(world_id: int, loc: dict) -> int:
@@ -134,7 +186,14 @@ def create_connection(world_id: int, from_id: int, to_id: int, desc: str):
 
 def get_connections(world_id: int) -> list[dict]:
     with get_db() as conn:
-        rows = conn.execute("SELECT * FROM location_connections WHERE world_id = ?", (world_id,)).fetchall()
+        rows = conn.execute(
+            """SELECT c.*, fl.name AS from_name, tl.name AS to_name
+               FROM location_connections c
+               JOIN locations fl ON c.from_location_id = fl.id
+               JOIN locations tl ON c.to_location_id = tl.id
+               WHERE c.world_id = ?""",
+            (world_id,)
+        ).fetchall()
         return [dict(r) for r in rows]
 
 

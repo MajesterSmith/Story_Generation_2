@@ -131,6 +131,19 @@ class SidebarWidget(QWidget):
         self.lbl_inventory.setStyleSheet("color:#8b949e; font-size:11px;")
         inv_l.addWidget(self.lbl_inventory)
         layout.addWidget(inv_frame)
+        layout.addWidget(_separator())
+
+        # ── Relationships
+        layout.addWidget(_section_label("RELATIONSHIPS"))
+        rel_frame = QFrame()
+        rel_frame.setObjectName("card")
+        self.rel_l = QVBoxLayout(rel_frame)
+        self.rel_l.setContentsMargins(10, 10, 10, 10)
+        self.rel_l.setSpacing(6)
+        self.lbl_no_rels = QLabel("No known allies or enemies.")
+        self.lbl_no_rels.setStyleSheet("color:#4b5563; font-style:italic; font-size:11px;")
+        self.rel_l.addWidget(self.lbl_no_rels)
+        layout.addWidget(rel_frame)
 
         layout.addStretch()
 
@@ -183,3 +196,32 @@ class SidebarWidget(QWidget):
             self.lbl_inventory.setText("\n".join(lines))
         else:
             self.lbl_inventory.setText("Empty")
+
+        # ── Relationships update
+        # Clear old items
+        while self.rel_l.count():
+            child = self.rel_l.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+        
+        if relationships:
+            for npc in relationships:
+                row = QWidget()
+                rl  = QHBoxLayout(row)
+                rl.setContentsMargins(0, 0, 0, 0)
+                
+                name_lbl = QLabel(npc["name"])
+                name_lbl.setStyleSheet("color:#e2e8f0; font-size:11px; font-weight:bold;")
+                
+                score = npc.get("relationship_score", 0)
+                tier_name, color = self._get_tier_style(score)
+                
+                status_lbl = QLabel(f"{tier_name} ({'+' if score > 0 else ''}{score})")
+                status_lbl.setStyleSheet(f"color:{color}; font-size:10px; font-weight:bold; text-transform:uppercase;")
+                
+                rl.addWidget(name_lbl)
+                rl.addStretch()
+                rl.addWidget(status_lbl)
+                self.rel_l.addWidget(row)
+        else:
+            self.rel_l.addWidget(self.lbl_no_rels)

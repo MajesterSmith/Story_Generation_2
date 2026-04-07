@@ -38,6 +38,7 @@ def init_db():
             name        TEXT NOT NULL,
             description TEXT DEFAULT '',
             traits      TEXT DEFAULT '[]',
+            relationship_score INTEGER DEFAULT 0,
             FOREIGN KEY (world_id) REFERENCES worlds(id) ON DELETE CASCADE
         );
 
@@ -55,8 +56,21 @@ def init_db():
             max_health    INTEGER DEFAULT 50,
             gold          INTEGER DEFAULT 10,
             shop_items    TEXT DEFAULT '[]',
+            relationship_score INTEGER DEFAULT 0,
             FOREIGN KEY (world_id)   REFERENCES worlds(id)   ON DELETE CASCADE,
             FOREIGN KEY (faction_id) REFERENCES factions(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS npc_memories (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            npc_id          INTEGER NOT NULL,
+            world_id        INTEGER NOT NULL,
+            turn_number     INTEGER DEFAULT 0,
+            event_summary   TEXT NOT NULL,
+            impact_score    INTEGER DEFAULT 0,
+            timestamp       DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (npc_id)   REFERENCES npcs(id)   ON DELETE CASCADE,
+            FOREIGN KEY (world_id) REFERENCES worlds(id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS graph_nodes (
@@ -167,3 +181,15 @@ def init_db():
             conn.execute("ALTER TABLE worlds ADD COLUMN custom_prompt TEXT DEFAULT ''")
         except sqlite3.OperationalError:
             pass  # Already exists
+
+        # Migration: Add relationship_score to npcs if not exists
+        try:
+            conn.execute("ALTER TABLE npcs ADD COLUMN relationship_score INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+
+        # Migration: Add relationship_score to factions if not exists
+        try:
+            conn.execute("ALTER TABLE factions ADD COLUMN relationship_score INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass

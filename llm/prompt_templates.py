@@ -80,13 +80,21 @@ Focus on:
 - Weaving the current quest objective into the prose.
 - Responding appropriately to the player's action and the dice result.
 A dice roll result is provided — honour it: if it says FAILURE, the action fails or partially fails.
+
+=== SOCIAL SIMULATION RULES ===
+1. Identify if the player is interacting with a specific NPC or Faction.
+2. If yes, update their "npc_relationship_change" or "faction_relationship_change" (range -20 to +20).
+3. If a SIGNIFICANT event occurs (betrayal, gift, life-saving, grave insult), provide a 1-sentence "npc_memory_summary".
+4. Adjust NPC dialogue style based on their current relationship score (provided in context).
+
 Track all state changes carefully and return them in the JSON.
 Return ONLY valid JSON — no markdown, no prose outside the narrative field.
 """
 
 def turn_user(player: dict, world: dict, active_quest: dict | None,
               action: str, dice_str: str, story_context: str,
-              location: dict | None = None, rules: dict | None = None) -> str:
+              location: dict | None = None, rules: dict | None = None,
+              npc_context: str = "") -> str:
     quest_txt = "None"
     if active_quest:
         quest_txt = (f"{active_quest['title']}: {active_quest['objective']} "
@@ -113,6 +121,9 @@ HP:{player['health']}/{player['max_health']}  Gold:{player['gold']}
 === RECENT STORY ===
 {story_context}
 
+=== NPC CONTEXT ===
+{npc_context}
+
 === DICE CHECK ===
 {dice_str}
 
@@ -128,7 +139,12 @@ Return this JSON:
     "items_lost": [],
     "gold_change": 0,
     "quest_updates": [],
-    "relationship_changes": []
+    "relationship_changes": [],
+    "npc_interacted_name": null,
+    "npc_relationship_change": 0,
+    "npc_memory_summary": null,
+    "faction_interacted_name": null,
+    "faction_relationship_change": 0
   }},
   "suggested_choices": ["choice 1", "choice 2", "choice 3"],
   "combat_outcome": null,

@@ -13,6 +13,8 @@ from ui.combat_widget   import CombatWidget
 from ui.trade_dialog    import TradeDialog
 from ui.world_select    import WorldSelectDialog
 from ui.choice_bar      import ChoiceBar
+from ui.map_tab         import MapTab
+from ui.quest_tab       import QuestTab
 
 from engine.world_engine    import WorldEngine
 from engine.narrative_engine import NarrativeEngine
@@ -190,6 +192,15 @@ class ChronosWindow(QMainWindow):
         self.graph_tab = GraphTab()
         self.tabs.addTab(self.graph_tab, "🕸  Relationships")
 
+        # ── Tab 3: World Map
+        self.map_tab = MapTab()
+        self.map_tab.location_selected.connect(self._on_quick_action)
+        self.tabs.addTab(self.map_tab, "🗺  World Map")
+
+        # ── Tab 4: Quest Log
+        self.quest_tab = QuestTab()
+        self.tabs.addTab(self.quest_tab, "📜  Quest Log")
+
         # Status bar
         self.statusBar().setStyleSheet("color:#6b7280; font-size:10px; background:#0d0f14;")
         self.statusBar().showMessage("Welcome to Chronos.  Select or generate a world to begin.")
@@ -218,6 +229,8 @@ class ChronosWindow(QMainWindow):
         self.action_input.setEnabled(True)
         self.btn_act.setEnabled(True)
         self.graph_tab.set_world(world_id)
+        self.map_tab.set_world(world_id, player["current_location"])
+        self.quest_tab.set_player_context(world_id, self.player_id)
         self.statusBar().showMessage(f"World '{world['name']}' loaded.  Begin your adventure.")
 
     # ── Generation ────────────────────────────────────────────────────────────
@@ -263,6 +276,8 @@ class ChronosWindow(QMainWindow):
         self.action_input.setEnabled(True)
         self.btn_act.setEnabled(True)
         self.graph_tab.set_world(world_id)
+        self.map_tab.set_world(world_id, world.get("starting_location", ""))
+        self.quest_tab.set_player_context(world_id, player_id)
         self.statusBar().showMessage(
             f"✓ World '{world['name']}' generated.  Your adventure begins…"
         )
@@ -331,6 +346,13 @@ class ChronosWindow(QMainWindow):
             self.combat_widget.update_enemy_hp(cs.npc_health, cs.npc_max_hp)
 
         self._refresh_ui()
+        
+        # Refresh tabs
+        self.quest_tab.refresh()
+        player = player_repo.get_player(self.player_id)
+        if player:
+            self.map_tab.set_world(self.world_id, player["current_location"])
+
         # Refresh graph only if relationships changed
         if response.state_update.relationship_changes:
             self.graph_tab.refresh()
@@ -389,7 +411,8 @@ class ChronosWindow(QMainWindow):
         player    = player_repo.get_player(self.player_id)
         quest     = quest_repo.get_active_quest(self.world_id, self.player_id)
         inventory = player_repo.get_inventory(self.player_id)
-        self.sidebar.refresh(player, quest, inventory)
+        known_npcs = world_repo.get_known_npcs(self.world_id)
+        self.sidebar.refresh(player, quest, inventory, relationships=known_npcs)
 
     def _set_busy(self, busy: bool, msg: str = ""):
         self.action_input.setEnabled(not busy)

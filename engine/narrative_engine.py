@@ -42,17 +42,19 @@ class NarrativeEngine:
         location = world_repo.get_location_by_name(world_id, player["current_location"])
         rules    = world_repo.get_world_rules(world_id)
 
-        # 5. Build context string
+        # 5. Build context strings
         story_ctx = context_tracker.build_context_string(world_id, limit=10)
+        npc_ctx   = self._build_npc_context(world_id)
 
         # 6. LLM call
         response: LLMResponse = self.client.send_turn(
             player, world, quest, action, dice_str, story_ctx,
-            location=location, rules=rules
+            location=location, rules=rules, npc_context=npc_ctx
         )
 
         # 6. Apply state updates
         self.sm.apply_updates(player_id, world_id, response.state_update)
+        self._apply_social_updates(world_id, response.state_update)
 
         # Merge narrative quest updates into the main narrative for display
         for qu in response.state_update.quest_updates:
@@ -72,3 +74,47 @@ class NarrativeEngine:
         logs    = story_repo.get_all_raw_logs(world_id)
         summary = self.client.summarize(logs)
         story_repo.archive_and_replace_with_summary(world_id, summary)
+
+    def _build_npc_context(self, world_id: int) -> str:
+        npcs = world_repo.get_all_npcs(world_id)
+        # For memory injection, only show NPCs who have met or have score
+        known = [n for n in npcs if n["relationship_score"] != 0]
+        if not known:
+            return "No known NPC relationships yet."
+        
+        lines = []
+        for n in known:
+            tier = self._get_tier(n["relationship_score"])
+            memories = world_repo.get_npc_memories(n["id"], world_id, limit=2)
+            mem_str = " | ".join([m["event_summary"] for m in memories]) if memories else "None"
+            lines.append(f"- {n['name']} (Score: {n['relationship_score']}, Tier: {tier}) | Traits: {n['traits']} | Memories: {mem_str}")
+        
+        return "\n".join(lines)
+
+    def _get_tier(self, score: int) -> str:
+        if score <= -50: return "Nemesis"
+        if score <= -20: return "Hostile"
+        if score <= -5:  return "Wary"
+        if score <= 5:   return "Neutral"
+        if score <= 20:  return "Friendly"
+        if score <= 50:  return "Ally"
+        return "Kin/Soulmate"
+
+    def _apply_social_updates(self, world_id: int, state: "StateUpdate"):
+        # 1. Individual NPC updates
+        if state.npc_interacted_name:
+            npc = world_repo.get_npc_by_name(world_id, state.npc_interacted_name)
+            if npc:
+                if state.npc_relationship_change != 0:
+                    world_repo.update_npc_relationship(npc["id"], state.npc_relationship_change)
+                if state.npc_memory_summary:
+                    turn_num = story_repo.get_next_turn_number(world_id)
+                    world_repo.add_npc_memory(npc["id"], world_id, turn_num, 
+                                              state.npc_memory_summary, state.npc_relationship_change)
+        
+        # 2. Faction updates
+        if state.faction_interacted_name:
+            factions = world_repo.get_factions(world_id)
+            target = next((f for f in factions if f["name"].lower() == state.faction_interacted_name.lower()), None)
+            if target and state.faction_relationship_change != 0:
+                world_repo.update_faction_relationship(target["id"], state.faction_relationship_change)
