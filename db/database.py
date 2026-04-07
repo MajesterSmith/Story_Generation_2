@@ -116,6 +116,17 @@ def init_db():
             FOREIGN KEY (world_id) REFERENCES worlds(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS quests (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            world_id     INTEGER NOT NULL,
+            player_id    INTEGER NOT NULL,
+            title        TEXT NOT NULL,
+            description  TEXT DEFAULT '',
+            objective    TEXT DEFAULT '',
+            status       TEXT DEFAULT 'ACTIVE',
+            hints        TEXT DEFAULT '[]',
+            reward_gold  INTEGER DEFAULT 0,
+            reward_items TEXT DEFAULT '[]',
             FOREIGN KEY (world_id)  REFERENCES worlds(id)   ON DELETE CASCADE,
             FOREIGN KEY (player_id) REFERENCES players(id)  ON DELETE CASCADE
         );

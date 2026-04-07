@@ -59,6 +59,20 @@ QScrollBar::handle:vertical:hover {
     background: #c9a84c;
 }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar:horizontal {
+    background: #161b22;
+    height: 6px;
+    border-radius: 3px;
+}
+QScrollBar::handle:horizontal {
+    background: #3d4451;
+    border-radius: 3px;
+    min-width: 20px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: #c9a84c;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 
 /* ── Text Edit (Narrative) ──────────────────────────── */
 QTextEdit#narrative_display {
@@ -132,6 +146,25 @@ QPushButton#btn_danger {
 }
 QPushButton#btn_danger:hover {
     background-color: #991b1b;
+}
+
+QPushButton#choice_btn {
+    background-color: #1a1d23;
+    color: #e2e8f0;
+    border: 1px solid #30363d;
+    border-radius: 14px;
+    padding: 6px 16px;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+}
+QPushButton#choice_btn:hover {
+    border-color: #c9a84c;
+    background-color: #21262d;
+    color: #f0d080;
+}
+QPushButton#choice_btn:pressed {
+    background-color: #c9a84c;
+    color: #0d0f14;
 }
 
 /* ── Labels ─────────────────────────────────────────── */
@@ -239,6 +272,16 @@ QToolTip {
     border: 1px solid #30363d;
     border-radius: 4px;
     padding: 4px 8px;
+}
+
+/* ── Choice Bar ───────────────────────────────────────── */
+QScrollArea#choice_scroll_area {
+    background-color: #0d0f14;
+    border-top: 1px solid #21262d;
+    border-bottom: 1px solid #21262d;
+}
+QWidget#choice_container {
+    background-color: #0d0f14;
 }
 """
 

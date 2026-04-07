@@ -12,6 +12,7 @@ from ui.graph_tab       import GraphTab
 from ui.combat_widget   import CombatWidget
 from ui.trade_dialog    import TradeDialog
 from ui.world_select    import WorldSelectDialog
+from ui.choice_bar      import ChoiceBar
 
 from engine.world_engine    import WorldEngine
 from engine.narrative_engine import NarrativeEngine
@@ -157,6 +158,11 @@ class ChronosWindow(QMainWindow):
         splitter.setStretchFactor(1, 0)
         sl.addWidget(splitter)
 
+        # Choice bar (scrollable)
+        self.choice_bar = ChoiceBar()
+        self.choice_bar.choice_selected.connect(self._on_quick_action)
+        sl.addWidget(self.choice_bar)
+
         # Input bar
         input_bar = QWidget()
         input_bar.setFixedHeight(56)
@@ -274,6 +280,7 @@ class ChronosWindow(QMainWindow):
         if not text or self.world_id is None:
             return
         self.action_input.clear()
+        self.choice_bar.clear_choices()
 
         # Detect trade intent
         if self._detect_trade(text):
@@ -304,8 +311,7 @@ class ChronosWindow(QMainWindow):
         self.narrative.append_text(response.narrative, role="narrator")
 
         if response.suggested_choices:
-            hints = "  |  ".join(response.suggested_choices[:3])
-            self.statusBar().showMessage(f"Suggestions: {hints}")
+            self.choice_bar.set_choices(response.suggested_choices)
 
         # NPC dialogue
         if response.npc_dialogue:
