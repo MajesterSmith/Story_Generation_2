@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QTextEdit, QWidget, QVBoxLayout, QSizePolicy
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QTextCursor, QColor, QTextCharFormat, QFont
 from config import TYPEWRITER_DELAY_MS
+import re
 
 
 class NarrativePanel(QWidget):
@@ -15,21 +16,22 @@ class NarrativePanel(QWidget):
     ROLE_COLOURS = {
         "narrator": "#e2e8f0",
         "player":   "#c9a84c",
-        "system":   "#6e7681",
+        "system":   "#8b949e",
         "combat":   "#f87171",
+        "quest":    "#4ade80", # Green for quests
     }
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._queue:  list[tuple[str, str]] = []   # (role, text)
-        self._buffer: str                   = ""
+        self._tokens: list[str]             = []   # word/chunk buffer
         self._cur_role: str                 = "narrator"
         self._typing:   bool                = False
 
         self._build_ui()
         self._timer = QTimer(self)
-        self._timer.setInterval(TYPEWRITER_DELAY_MS)
-        self._timer.timeout.connect(self._type_next_char)
+        self._timer.setInterval(25)  # Faster "word" based pacing
+        self._timer.timeout.connect(self._type_next_chunk)
 
     # ── UI ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +62,7 @@ class NarrativePanel(QWidget):
 
     def clear_display(self):
         self._queue.clear()
-        self._buffer = ""
+        self._tokens = []
         self._typing = False
         self._timer.stop()
         self.display.clear()
@@ -79,47 +81,69 @@ class NarrativePanel(QWidget):
             self._typing = False
             self.typing_finished.emit()
             return
+        
         role, text = self._queue.pop(0)
         self._cur_role = role
-        self._buffer   = "\n" + text + "\n"
-        self._typing   = True
+        
+        # Robust Markdown to HTML conversion
+        import re
+        processed = text.replace("\n\n", "<br><br>")
+        processed = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", processed)
+        processed = re.sub(r"\*(.*?)\*", r"<i>\1</i>", processed)
+        
+        # Split into chunks (keeping tags together)
+        # Regex to split by spaces but keep HTML tags attached to words or as separate tokens
+        self._tokens = re.findall(r'<[^>]+>|[^ <]+|[ ]', processed)
+        
+        self._typing = True
         self._timer.start()
 
-    def _type_next_char(self):
-        if not self._buffer:
+    def _type_next_chunk(self):
+        if not self._tokens:
             self._timer.stop()
+            # Add a bit of padding between turns
+            self._append_html("<br>", self._cur_role)
             self._start_next()
             return
-        char = self._buffer[0]
-        self._buffer = self._buffer[1:]
-        self._append_char(char, self._cur_role)
-        if char in (".", "!", "?", "\n"):
+        
+        chunk = self._tokens.pop(0)
+        self._append_html(chunk, self._cur_role)
+        
+        # Scroll logic
+        if "\n" in chunk or "<br>" in chunk or "." in chunk:
             self._scroll_to_bottom()
 
-    def _append_char(self, char: str, role: str):
+    def _append_html(self, html_chunk: str, role: str):
         cursor = self.display.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
-        fmt = QTextCharFormat()
+        
         colour = self.ROLE_COLOURS.get(role, "#c9d1d9")
-        fmt.setForeground(QColor(colour))
+        # Wrap the chunk in a span with the role color
+        styled_html = f'<span style="color:{colour};">{html_chunk}</span>'
+        
         if role == "player":
-            fmt.setFontWeight(QFont.Weight.Bold)
-        cursor.insertText(char, fmt)
+             styled_html = f'<b>{styled_html}</b>'
+             
+        cursor.insertHtml(styled_html)
 
     def _insert_paragraph(self, text: str, role: str):
+        """Used for history loading."""
+        import re
+        processed = text.replace("\n\n", "<br><br>")
+        processed = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", processed)
+        processed = re.sub(r"\*(.*?)\*", r"<i>\1</i>", processed)
+        
+        colour = self.ROLE_COLOURS.get(role, "#c9d1d9")
+        styled_html = f'<div style="color:{colour}; margin-bottom:10px;">{processed}</div>'
+        
         cursor = self.display.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
-        fmt = QTextCharFormat()
-        colour = self.ROLE_COLOURS.get(role, "#c9d1d9")
-        fmt.setForeground(QColor(colour))
-        if role == "player":
-            fmt.setFontWeight(QFont.Weight.Bold)
-        cursor.insertText("\n" + text + "\n", fmt)
+        cursor.insertHtml(styled_html)
 
     def _flush_buffer(self):
-        if self._buffer:
-            self._insert_paragraph(self._buffer.strip(), self._cur_role)
-            self._buffer = ""
+        if self._tokens:
+            self._insert_paragraph(" ".join(self._tokens).strip(), self._cur_role)
+            self._tokens = []
         self._timer.stop()
         self._typing = False
 

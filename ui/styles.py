@@ -80,10 +80,10 @@ QTextEdit#narrative_display {
     color: #e2e8f0;
     border: none;
     border-right: 1px solid #21262d;
-    font-family: 'Georgia', 'Palatino Linotype', serif;
-    font-size: 14px;
-    line-height: 1.7;
-    padding: 18px 22px;
+    font-family: 'Georgia', 'Palatino Linotype', 'Times New Roman', serif;
+    font-size: 15px;
+    line-height: 1.8;
+    padding: 24px 28px;
     selection-background-color: #2d4a7a;
 }
 
