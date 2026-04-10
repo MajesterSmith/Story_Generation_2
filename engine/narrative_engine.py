@@ -59,7 +59,7 @@ class NarrativeEngine:
         # Merge narrative quest updates into the main narrative for display
         for qu in response.state_update.quest_updates:
             if isinstance(qu, str):
-                response.narrative += f"\n\n**[QUEST UPDATE]** *{qu}*"
+                response.narrative += f"\n\n[QUEST] {qu}"
 
         # 7. Persist logs
         turn_num = story_repo.get_next_turn_number(world_id)

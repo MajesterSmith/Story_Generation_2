@@ -140,6 +140,9 @@ class SidebarWidget(QWidget):
         self.rel_l = QVBoxLayout(rel_frame)
         self.rel_l.setContentsMargins(10, 10, 10, 10)
         self.rel_l.setSpacing(6)
+        self.lbl_no_rels = QLabel("No known allies or enemies.")
+        self.lbl_no_rels.setStyleSheet("color:#4b5563; font-style:italic; font-size:11px;")
+        self.rel_l.addWidget(self.lbl_no_rels)
         layout.addWidget(rel_frame)
 
         layout.addStretch()
@@ -155,18 +158,8 @@ class SidebarWidget(QWidget):
         return lbl
 
     # ── Public refresh ────────────────────────────────────────────────────────
-    
-    def _get_tier_style(self, score: int) -> tuple[str, str]:
-        """Return (Tier Name, CSS Color)"""
-        if score <= -50: return "Nemesis",     "#ff4444"
-        if score <= -20: return "Hostile",     "#f87171"
-        if score <= -5:  return "Wary",        "#fb923c"
-        if score <= 5:   return "Neutral",     "#9ca3af"
-        if score <= 20:  return "Friendly",    "#4ade80"
-        if score <= 50:  return "Ally",        "#22c55e"
-        return "Soulmate",    "#e879f9"
 
-    def refresh(self, player: dict, quest: dict | None, inventory: list[dict], relationships: list[dict] = None):
+    def refresh(self, player: dict, quest: dict | None, inventory: list[dict]):
         if not player:
             return
 
@@ -231,6 +224,4 @@ class SidebarWidget(QWidget):
                 rl.addWidget(status_lbl)
                 self.rel_l.addWidget(row)
         else:
-            lbl = QLabel("No known allies or enemies.")
-            lbl.setStyleSheet("color:#4b5563; font-style:italic; font-size:11px;")
-            self.rel_l.addWidget(lbl)
+            self.rel_l.addWidget(self.lbl_no_rels)
