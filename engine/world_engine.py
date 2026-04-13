@@ -107,3 +107,47 @@ class WorldEngine:
         world  = world_repo.get_world(world_id)
         player = player_repo.get_player_by_world(world_id)
         return world, player
+
+    def run_world_pulse(self, world_id: int, state_manager: "StateManager"):
+        """
+        Trigger a background world event.
+        Returns the narration text.
+        """
+        world    = world_repo.get_world(world_id)
+        factions = world_repo.get_factions(world_id)
+        npcs     = world_repo.get_all_npcs(world_id)
+        beats    = story_repo.get_story_beats(world_id)
+        beat_str = "\n".join([f"- {b['beat_summary']}" for b in beats])
+
+        data = self.client.send_world_event(world, factions, npcs, beat_str)
+        narration = data.get("event_narration", "The world shifts in the shadows.")
+        
+        # Apply updates
+        update_data = data.get("state_update", {})
+        if update_data:
+            from models.llm_response import StateUpdate
+            state = StateUpdate(**update_data)
+            
+            # Use state_manager for player-agnostic updates (factions, npcs)
+            # 1. NPC updates
+            if state.npc_interacted_name:
+                npc = world_repo.get_npc_by_name(world_id, state.npc_interacted_name)
+                if npc and state.npc_relationship_change != 0:
+                    world_repo.update_npc_relationship(npc["id"], state.npc_relationship_change)
+            
+            # 2. Faction updates
+            if state.faction_interacted_name:
+                f = next((fac for fac in factions if fac["name"].lower() == state.faction_interacted_name.lower()), None)
+                if f and state.faction_relationship_change != 0:
+                    world_repo.update_faction_relationship(f["id"], state.faction_relationship_change)
+
+            # 3. Story Beat
+            if state.important_beat:
+                turn_num = story_repo.get_next_turn_number(world_id)
+                story_repo.add_story_beat(world_id, turn_num, state.important_beat)
+
+        # Log it
+        turn_num = story_repo.get_next_turn_number(world_id)
+        story_repo.add_log(world_id, turn_num, "system", f"[WORLD EVENT] {narration}")
+
+        return narration

@@ -17,10 +17,7 @@ class OllamaClient:
     # ── Raw API ───────────────────────────────────────────────────────────────
 
     def _call(self, system: str, user: str, json_mode: bool = True) -> str:
-        # Note: We are deliberately disabling Ollama's format="json" because 
-        # it forces strict grammar-based sampling which can slow generation 
-        # down by 10x-100x for complex nested JSON on 7B models.
-        # We rely on the prompt instructing the model to return JSON only.
+
         print(f"--- Sending request to Ollama ({self.model})...", flush=True)
         payload: dict = {
             "model": self.model,
@@ -29,7 +26,7 @@ class OllamaClient:
                 {"role": "user",    "content": user},
             ],
             "stream": False,
-            "options": {"temperature": 0.7, "num_predict": 2048}
+            "options": {"temperature": 0.7, "num_predict": 4096}
         }
         
         try:
@@ -72,8 +69,26 @@ class OllamaClient:
             except json.JSONDecodeError:
                 pass
             
+            
         # 3. Final attempt: direct parse of the stripped text
-        return json.loads(text)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # 4. JSON Repair: If it's truncated, try adding closing braces
+            # This is a common failure mode when num_predict is hit.
+            repaired = text
+            # Very simple repair: try adding up to 4 closing braces
+            for _ in range(4):
+                repaired += "}"
+                try:
+                    return json.loads(repaired)
+                except json.JSONDecodeError:
+                    continue
+            
+            # 5. If it's still failing, it might be a partial string at the end
+            # Try to find the last valid comma or structure
+            # (This is getting complex, but let's at least try one level of fix)
+            raise
 
     def _safe_llm_response(self, raw: str) -> LLMResponse:
         """Parse LLM output into LLMResponse, recovering gracefully on errors."""
@@ -83,9 +98,21 @@ class OllamaClient:
             if "state_update" not in data or not isinstance(data["state_update"], dict):
                 data["state_update"] = {}
             return LLMResponse(**data)
-        except (json.JSONDecodeError, ValidationError, Exception):
+        except (json.JSONDecodeError, ValidationError) as e:
+            print(f"--- FAILED TO PARSE JSON: {e}")
+            print(f"--- RAW CONTENT START: {raw[:200]}...")
+            
             # Fallback: treat entire raw text as narrative
+            # If it's obviously JSON, try to extract just the narrative field via regex
+            narrative_match = re.search(r'"narrative":\s*"((?:\\.|[^"\\])*)"', raw, re.DOTALL)
+            if narrative_match:
+                extracted = narrative_match.group(1).encode('utf-16', 'surrogatepass').decode('utf-16')
+                return LLMResponse(narrative=extracted)
+
             return LLMResponse(narrative=raw[:1000] if raw else "The world holds its breath…")
+        except Exception as e:
+            print(f"--- UNEXPECTED ERROR IN RESPONSE HANDLING: {e}")
+            return LLMResponse(narrative="[Narrative system error]")
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -107,11 +134,21 @@ class OllamaClient:
     def send_turn(self, player: dict, world: dict, active_quest: dict | None,
                   action: str, dice_str: str, story_context: str,
                   location: dict | None = None, rules: dict | None = None,
-                  npc_context: str = "") -> LLMResponse:
+                  npc_context: str = "", story_beats: str = "") -> LLMResponse:
         user = T.turn_user(player, world, active_quest, action, dice_str, story_context,
-                           location=location, rules=rules, npc_context=npc_context)
+                           location=location, rules=rules, npc_context=npc_context,
+                           story_beats=story_beats)
         raw  = self._call(T.TURN_SYSTEM, user)
-        return self._safe_llm_response(raw)
+        res  = self._safe_llm_response(raw)
+        # Flatten importante_beat if it's in state_update
+        if not res.important_beat and res.state_update.important_beat:
+            res.important_beat = res.state_update.important_beat
+        return res
+
+    def send_world_event(self, world: dict, factions: list, npcs: list, beats: str) -> dict:
+        user = T.world_event_user(world, factions, npcs, beats)
+        raw  = self._call(T.WORLD_EVENT_SYSTEM, user)
+        return self._parse_json(raw)
 
     def send_combat_turn(self, player: dict, npc: dict, action: str,
                          dice_str: str, player_damage: int, npc_damage: int,

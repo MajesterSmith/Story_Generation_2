@@ -328,9 +328,6 @@ class ChronosWindow(QMainWindow):
         if response.suggested_choices:
             self.choice_bar.set_choices(response.suggested_choices)
 
-        # NPC dialogue
-        if response.npc_dialogue:
-            self.narrative.append_text(f"💬 {response.npc_dialogue}", role="system")
 
         # Combat start detection
         if response.combat_outcome and not self.c_engine.in_combat:

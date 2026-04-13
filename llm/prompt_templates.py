@@ -79,22 +79,28 @@ Focus on:
 - Lore-heavy descriptions of the environment and atmosphere.
 - Weaving the current quest objective into the prose.
 - Responding appropriately to the player's action and the dice result.
-A dice roll result is provided — honour it: if it says FAILURE, the action fails or partially fails.
 
-=== SOCIAL SIMULATION RULES ===
-1. Identify if the player is interacting with a specific NPC or Faction.
-2. If yes, update their "npc_relationship_change" or "faction_relationship_change" (range -20 to +20).
-3. If a SIGNIFICANT event occurs (betrayal, gift, life-saving, grave insult), provide a 1-sentence "npc_memory_summary".
-4. Adjust NPC dialogue style based on their current relationship score (provided in context).
+=== DICE & FAILURE RULES ===
+1. A dice roll result is provided — honour it exactly.
+2. If it says FAILURE, the action must fail or have a negative cost.
+3. Choose one of these failure modes:
+   - COMPLICATION: The action barely succeeds, but a new threat appears or a resource is damaged.
+   - COST: The action fails, and you lose HP, Gold, or an Item.
+   - HARD STOP: The path is totally blocked; you must find another way.
+4. Reflect these costs in the "state_update" JSON fields.
 
-Track all state changes carefully and return them in the JSON.
+=== SOCIAL & MEMORY RULES ===
+1. If the player interacts with an NPC/Faction, update relationship changes (-20 to +20).
+2. "npc_memory_summary": A 1-sentence summary for the NPC to remember.
+3. "important_beat": If a major, world-changing, or plot-defining event occurred (e.g. death of a key NPC, finishing a major quest, discovery of a legendary artifact), provide a 1-sentence summary here. This will be stored in long-term memory.
+
 Return ONLY valid JSON — no markdown, no prose outside the narrative field.
 """
 
 def turn_user(player: dict, world: dict, active_quest: dict | None,
               action: str, dice_str: str, story_context: str,
               location: dict | None = None, rules: dict | None = None,
-              npc_context: str = "") -> str:
+              npc_context: str = "", story_beats: str = "") -> str:
     quest_txt = "None"
     if active_quest:
         quest_txt = (f"{active_quest['title']}: {active_quest['objective']} "
@@ -104,6 +110,9 @@ Name: {world['name']} | Theme: {world['theme']}
 Lore: {world['lore_summary']}
 Rules: Magic:{rules.get('magic_level', 'Unknown')} | Tech:{rules.get('tech_level', 'Unknown')}
 Laws: {', '.join(rules.get('laws', [])) if rules else 'None'}
+
+=== MAJOR STORY SO FAR ===
+{story_beats if story_beats else "The journey has just begun."}
 
 === LOCATION ===
 Current: {location['name'] if location else player['current_location']}
@@ -144,13 +153,47 @@ Return this JSON:
     "npc_relationship_change": 0,
     "npc_memory_summary": null,
     "faction_interacted_name": null,
-    "faction_relationship_change": 0
+    "faction_relationship_change": 0,
+    "important_beat": null
   }},
   "suggested_choices": ["choice 1", "choice 2", "choice 3"],
   "combat_outcome": null,
   "new_quest": null,
   "npc_dialogue": null,
   "trade_offer": null
+}}"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Background World Events
+# ─────────────────────────────────────────────────────────────────────────────
+
+WORLD_EVENT_SYSTEM = """You are the background simulator for Chronos.
+Generate a significant world event that happens while the player is occupied.
+Events should involve Faction power shifts, NPC movements, or natural/political disasters.
+Return ONLY valid JSON.
+"""
+
+def world_event_user(world: dict, factions: list, npcs: list, beats: str) -> str:
+    f_list = [f"{f['name']}: {f['description']} (Rep: {f['relationship_score']})" for f in factions]
+    n_list = [n['name'] for n in npcs[:10]]
+    return f"""World: {world['name']} ({world['theme']})
+Lore: {world['lore_summary']}
+Major History: {beats}
+
+Factions: {', '.join(f_list)}
+Notable NPCs: {', '.join(n_list)}
+
+Generate a background event. Return:
+{{
+  "event_narration": "A 2-3 sentence description of what happened in the world.",
+  "state_update": {{
+    "faction_interacted_name": "...",
+    "faction_relationship_change": 0,
+    "npc_interacted_name": "...",
+    "npc_relationship_change": 0,
+    "important_beat": "A 1-sentence summary for long-term memory."
+  }}
 }}"""
 
 

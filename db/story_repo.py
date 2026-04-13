@@ -71,3 +71,21 @@ def get_next_turn_number(world_id: int) -> int:
             "SELECT MAX(turn_number) as mx FROM story_logs WHERE world_id=?", (world_id,)
         ).fetchone()
         return (row["mx"] or 0) + 1
+
+
+def add_story_beat(world_id: int, turn_number: int, summary: str, importance: int = 1):
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO story_beats (world_id, turn_number, beat_summary, importance)
+               VALUES (?,?,?,?)""",
+            (world_id, turn_number, summary, importance),
+        )
+
+
+def get_story_beats(world_id: int, min_importance: int = 1) -> list[dict]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM story_beats WHERE world_id=? AND importance >= ? ORDER BY turn_number ASC",
+            (world_id, min_importance),
+        ).fetchall()
+        return [dict(r) for r in rows]

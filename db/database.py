@@ -174,6 +174,15 @@ def init_db():
             laws         TEXT DEFAULT '[]',
             FOREIGN KEY (world_id) REFERENCES worlds(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS story_beats (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            world_id        INTEGER NOT NULL,
+            turn_number     INTEGER NOT NULL,
+            beat_summary    TEXT NOT NULL,
+            importance      INTEGER DEFAULT 1,
+            FOREIGN KEY (world_id) REFERENCES worlds(id) ON DELETE CASCADE
+        );
         """)
 
         # Migration: Add custom_prompt to worlds if not exists

@@ -39,6 +39,9 @@ class StateUpdate(BaseModel):
     faction_interacted_name: Optional[str] = None
     faction_relationship_change: int = 0
 
+    # Long-term Memory
+    important_beat: Optional[str] = None
+
 
 class LLMResponse(BaseModel):
     narrative: str = ""
@@ -48,3 +51,6 @@ class LLMResponse(BaseModel):
     new_quest: Optional[dict] = None
     npc_dialogue: Optional[str] = None
     trade_offer: Optional[dict] = None
+    
+    # Can also be set at the top level for convenience
+    important_beat: Optional[str] = None

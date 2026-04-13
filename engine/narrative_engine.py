@@ -42,29 +42,43 @@ class NarrativeEngine:
         location = world_repo.get_location_by_name(world_id, player["current_location"])
         rules    = world_repo.get_world_rules(world_id)
 
-        # 5. Build context strings
-        story_ctx = context_tracker.build_context_string(world_id, limit=10)
+        # 5. Build context strings (Story + Long-term Beats)
+        story_ctx, beat_ctx = context_tracker.build_context_string(world_id, limit=10)
         npc_ctx   = self._build_npc_context(world_id)
 
         # 6. LLM call
         response: LLMResponse = self.client.send_turn(
             player, world, quest, action, dice_str, story_ctx,
-            location=location, rules=rules, npc_context=npc_ctx
+            location=location, rules=rules, npc_context=npc_ctx,
+            story_beats=beat_ctx
         )
 
         # 6. Apply state updates
         self.sm.apply_updates(player_id, world_id, response.state_update)
         self._apply_social_updates(world_id, response.state_update)
 
+        # 7. Record long-term story beat
+        if response.important_beat:
+            turn_num = story_repo.get_next_turn_number(world_id)
+            story_repo.add_story_beat(world_id, turn_num, response.important_beat)
+
         # Merge narrative quest updates into the main narrative for display
         for qu in response.state_update.quest_updates:
             if isinstance(qu, str):
                 response.narrative += f"\n\n[QUEST] {qu}"
 
-        # 7. Persist logs
+        # 9. Persist logs
         turn_num = story_repo.get_next_turn_number(world_id)
         story_repo.add_log(world_id, turn_num, "player",   action)
         story_repo.add_log(world_id, turn_num, "narrator", response.narrative)
+
+        # 10. Check for World Pulse (Background simulation)
+        if turn_num > 0 and turn_num % 10 == 0:
+            from engine.world_engine import WorldEngine
+            we = WorldEngine(self.client)
+            pulse_msg = we.run_world_pulse(world_id, self.sm)
+            # Optionally append to display for next turn or show as special note
+            response.narrative += f"\n\n[WORLD NEWS] {pulse_msg}"
 
         return response
 
