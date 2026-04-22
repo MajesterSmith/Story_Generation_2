@@ -60,12 +60,12 @@ def create_npc(world_id: int, faction_id: int | None, npc: NPCModel) -> int:
         cur = conn.execute(
             """INSERT INTO npcs
                (world_id, faction_id, name, description, traits,
-                strength, intelligence, agility, health, max_health, gold, shop_items)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                strength, intelligence, agility, health, max_health, gold, goal, shop_items)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 world_id, faction_id, npc.name, npc.description, json.dumps(npc.traits),
                 npc.strength, npc.intelligence, npc.agility, npc.health, npc.health,
-                npc.gold, json.dumps(npc.shop_items),
+                npc.gold, npc.goal, json.dumps(npc.shop_items),
             ),
         )
         return cur.lastrowid
@@ -214,3 +214,26 @@ def get_world_rules(world_id: int) -> dict | None:
             d["laws"] = json.loads(d.get("laws", "[]"))
             return d
         return None
+
+
+# ── World State ───────────────────────────────────────────────────────────────
+
+def get_world_state(world_id: int) -> dict:
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM world_state WHERE world_id = ?", (world_id,)).fetchone()
+        if row:
+            return dict(row)
+        # Default if missing
+        return {"world_id": world_id, "current_turn": 0, "weather": "Clear", "time_of_day": "Morning", "is_night": 0}
+
+
+def update_world_state(world_id: int, current_turn: int, weather: str, time_of_day: str, is_night: int):
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO world_state (world_id, current_turn, weather, time_of_day, is_night)
+               VALUES (?,?,?,?,?)
+               ON CONFLICT(world_id) DO UPDATE SET
+               current_turn=excluded.current_turn, weather=excluded.weather, 
+               time_of_day=excluded.time_of_day, is_night=excluded.is_night""",
+            (world_id, current_turn, weather, time_of_day, is_night)
+        )

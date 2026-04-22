@@ -71,6 +71,13 @@ class WorldEngine:
         # 11. Initial quest
         factions = world_repo.get_factions(world_id)
         npcs     = world_repo.get_all_npcs(world_id)
+        
+        # Initialize World State
+        world_repo.update_world_state(world_id, 0, "Clear", "Morning", 0)
+
+        # Create Player Node in Graph for relationship tracking
+        graph_repo.get_or_create_player_node(world_id, player_name)
+
         q_data   = self.client.generate_quest(
             world_repo.get_world(world_id), factions, npcs
         )
@@ -97,8 +104,6 @@ class WorldEngine:
             intro_text = f"You awaken in {seed.starting_location}. {seed.lore_summary}"
 
         story_repo.add_log(world_id, 0, "narrator", intro_text)
-
-        return world_id, player_id
 
         return world_id, player_id
 

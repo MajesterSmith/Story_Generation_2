@@ -18,6 +18,7 @@ class NPCModel(BaseModel):
     agility: int = Field(default=10, ge=1, le=20)
     health: int = Field(default=50, ge=1, le=200)
     gold: int = Field(default=10, ge=0)
+    goal: str = "Survive and thrive."
     shop_items: list[dict] = []
 
 
@@ -58,3 +59,11 @@ class WorldSeed(BaseModel):
     locations: list[LocationModel] = []
     connections: list[ConnectionModel] = []
     rules: WorldRulesModel = Field(default_factory=WorldRulesModel)
+
+
+class WorldState(BaseModel):
+    world_id: int
+    current_turn: int = 0
+    weather: str = "Clear"
+    time_of_day: str = "Morning"
+    is_night: bool = False

@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from config import OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT
 from models.world import WorldSeed
-from models.llm_response import LLMResponse, StateUpdate
+from models.llm_response import BeatCandidate, LLMResponse, StateUpdate
 import llm.prompt_templates as T
 
 
@@ -97,6 +97,14 @@ class OllamaClient:
             # Ensure state_update is a dict before validation
             if "state_update" not in data or not isinstance(data["state_update"], dict):
                 data["state_update"] = {}
+            if "candidate_beats" in data and isinstance(data["candidate_beats"], list):
+                normalized_candidates = []
+                for candidate in data["candidate_beats"]:
+                    if isinstance(candidate, str):
+                        normalized_candidates.append({"summary": candidate})
+                    elif isinstance(candidate, dict):
+                        normalized_candidates.append(candidate)
+                data["candidate_beats"] = normalized_candidates
             return LLMResponse(**data)
         except (json.JSONDecodeError, ValidationError) as e:
             print(f"--- FAILED TO PARSE JSON: {e}")
@@ -143,6 +151,8 @@ class OllamaClient:
         # Flatten importante_beat if it's in state_update
         if not res.important_beat and res.state_update.important_beat:
             res.important_beat = res.state_update.important_beat
+        if res.candidate_beats and not res.selected_beat:
+            res.selected_beat = res.candidate_beats[0]
         return res
 
     def send_world_event(self, world: dict, factions: list, npcs: list, beats: str) -> dict:

@@ -2,6 +2,15 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
+class BeatCandidate(BaseModel):
+    summary: str
+    beat_type: str = "main"
+    importance: int = 1
+    weight: float = 1.0
+    tags: list[str] = Field(default_factory=list)
+    note: Optional[str] = None
+
+
 class DiceResult(BaseModel):
     stat_used: str
     stat_value: int
@@ -47,6 +56,7 @@ class LLMResponse(BaseModel):
     narrative: str = ""
     state_update: StateUpdate = Field(default_factory=StateUpdate)
     suggested_choices: list[str] = Field(default_factory=list)
+    candidate_beats: list[BeatCandidate] = Field(default_factory=list)
     combat_outcome: Optional[str] = None   # HIT | MISS | CRITICAL | DODGE
     new_quest: Optional[dict] = None
     npc_dialogue: Optional[str] = None
@@ -54,3 +64,4 @@ class LLMResponse(BaseModel):
     
     # Can also be set at the top level for convenience
     important_beat: Optional[str] = None
+    selected_beat: Optional[BeatCandidate] = None

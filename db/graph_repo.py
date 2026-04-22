@@ -19,10 +19,17 @@ def get_nodes(world_id: int) -> list[dict]:
 def get_node_by_label(world_id: int, label: str) -> dict | None:
     with get_db() as conn:
         row = conn.execute(
-            "SELECT * FROM graph_nodes WHERE world_id = ? AND lower(label) LIKE ?",
-            (world_id, f"%{label.lower()}%"),
+            "SELECT * FROM graph_nodes WHERE world_id = ? AND lower(label) = ?",
+            (world_id, label.lower()),
         ).fetchone()
         return dict(row) if row else None
+
+
+def get_or_create_player_node(world_id: int, player_name: str) -> int:
+    node = get_node_by_label(world_id, player_name)
+    if node:
+        return node["id"]
+    return create_node(world_id, "player", 0, player_name)
 
 
 def create_edge(world_id: int, source_id: int, target_id: int,

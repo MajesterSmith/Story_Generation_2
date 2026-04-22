@@ -183,6 +183,15 @@ def init_db():
             importance      INTEGER DEFAULT 1,
             FOREIGN KEY (world_id) REFERENCES worlds(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS world_state (
+            world_id        INTEGER PRIMARY KEY,
+            current_turn    INTEGER DEFAULT 0,
+            weather         TEXT DEFAULT 'Clear',
+            time_of_day     TEXT DEFAULT 'Morning',
+            is_night        INTEGER DEFAULT 0,
+            FOREIGN KEY (world_id) REFERENCES worlds(id) ON DELETE CASCADE
+        );
         """)
 
         # Migration: Add custom_prompt to worlds if not exists
@@ -200,5 +209,11 @@ def init_db():
         # Migration: Add relationship_score to factions if not exists
         try:
             conn.execute("ALTER TABLE factions ADD COLUMN relationship_score INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+
+        # Migration: Add goal to npcs if not exists
+        try:
+            conn.execute("ALTER TABLE npcs ADD COLUMN goal TEXT DEFAULT 'Survive and thrive.'")
         except sqlite3.OperationalError:
             pass

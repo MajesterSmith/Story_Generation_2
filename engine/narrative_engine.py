@@ -2,6 +2,7 @@ from db import player_repo, world_repo, quest_repo, story_repo
 from llm.ollama_client import OllamaClient
 from models.llm_response import LLMResponse
 from engine.state_manager import StateManager
+from engine.event_selector import EventSelector
 from utils import dice, context_tracker
 
 
@@ -14,6 +15,7 @@ class NarrativeEngine:
     def __init__(self, client: OllamaClient, state_manager: StateManager):
         self.client  = client
         self.sm      = state_manager
+        self.selector = EventSelector()
 
     # ── Public ────────────────────────────────────────────────────────────────
 
@@ -53,12 +55,17 @@ class NarrativeEngine:
             story_beats=beat_ctx
         )
 
+        selected_beat = self.selector.select(response, quest=quest, story_beats=beat_ctx, action=action)
+
         # 6. Apply state updates
         self.sm.apply_updates(player_id, world_id, response.state_update)
         self._apply_social_updates(world_id, response.state_update)
 
         # 7. Record long-term story beat
-        if response.important_beat:
+        if selected_beat:
+            turn_num = story_repo.get_next_turn_number(world_id)
+            story_repo.add_story_beat(world_id, turn_num, selected_beat.summary, selected_beat.importance)
+        elif response.important_beat:
             turn_num = story_repo.get_next_turn_number(world_id)
             story_repo.add_story_beat(world_id, turn_num, response.important_beat)
 

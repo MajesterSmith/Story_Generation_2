@@ -79,6 +79,8 @@ Focus on:
 - Lore-heavy descriptions of the environment and atmosphere.
 - Weaving the current quest objective into the prose.
 - Responding appropriately to the player's action and the dice result.
+- Keep one clear main thread. Every turn should either advance, complicate, or reveal something directly connected to the active quest or an existing long-term beat.
+- Avoid introducing unrelated side plots unless they clearly reinforce the main thread.
 
 === DICE & FAILURE RULES ===
 1. A dice roll result is provided — honour it exactly.
@@ -93,6 +95,7 @@ Focus on:
 1. If the player interacts with an NPC/Faction, update relationship changes (-20 to +20).
 2. "npc_memory_summary": A 1-sentence summary for the NPC to remember.
 3. "important_beat": If a major, world-changing, or plot-defining event occurred (e.g. death of a key NPC, finishing a major quest, discovery of a legendary artifact), provide a 1-sentence summary here. This will be stored in long-term memory.
+4. "candidate_beats": Always provide 1-3 focused candidate beats for the main thread. Each candidate must be a short summary with a beat type and importance.
 
 Return ONLY valid JSON — no markdown, no prose outside the narrative field.
 """
@@ -156,6 +159,10 @@ Return this JSON:
     "faction_relationship_change": 0,
     "important_beat": null
   }},
+  "candidate_beats": [
+    {{"summary": "One focused beat tied to the current quest.", "beat_type": "main", "importance": 7, "weight": 1.0, "tags": ["quest"]}},
+    {{"summary": "A complication that raises the stakes.", "beat_type": "complication", "importance": 5, "weight": 0.8, "tags": ["stakes"]}}
+  ],
   "suggested_choices": ["choice 1", "choice 2", "choice 3"],
   "combat_outcome": null,
   "new_quest": null,
