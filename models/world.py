@@ -12,6 +12,7 @@ class NPCModel(BaseModel):
     name: str
     description: str = ""
     faction_name: Optional[str] = None
+    current_location: Optional[str] = None
     traits: list[str] = []
     strength: int = Field(default=10, ge=1, le=20)
     intelligence: int = Field(default=10, ge=1, le=20)

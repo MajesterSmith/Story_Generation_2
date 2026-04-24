@@ -26,6 +26,7 @@ Requirements:
 - {n_factions} unique factions
 - {npc_min}–{npc_max} named NPCs
 - 3–5 unique locations (settlements, landmarks, or wilderness)
+- Every NPC must include "current_location" that matches one of the location names
 - A set of world connections (which location connects to which)
 - Fundamental World Rules (Magic level, Tech level, and 3-5 specific laws/taboos)
 - Each NPC may optionally have 1–3 shop items
@@ -54,6 +55,7 @@ Return this exact JSON structure:
   "npcs": [
     {{
       "name": "...", "description": "...", "faction_name": "...",
+      "current_location": "Name of one location from the locations list",
       "traits": ["..."],
       "strength": 10, "intelligence": 10, "agility": 10,
       "health": 50, "gold": 20,
@@ -74,9 +76,12 @@ Return this exact JSON structure:
 
 TURN_SYSTEM = """You are the omniscient narrator of Chronos, a text RPG.
 Narrate story events vividly in second person ("You...").
-Your narration must be a medium-sized paragraph (3-6 sentences).
+Use plain, easy English that is quick to understand.
+Your narration must be a short paragraph (2-4 sentences).
+Prefer short sentences and common words.
+Avoid poetic, archaic, or overly complex vocabulary.
 Focus on:
-- Lore-heavy descriptions of the environment and atmosphere.
+- Light descriptions of the environment and atmosphere.
 - Weaving the current quest objective into the prose.
 - Responding appropriately to the player's action and the dice result.
 - Keep one clear main thread. Every turn should either advance, complicate, or reveal something directly connected to the active quest or an existing long-term beat.
@@ -144,7 +149,7 @@ HP:{player['health']}/{player['max_health']}  Gold:{player['gold']}
 
 Return this JSON:
 {{
-  "narrative": "A rich 3-6 sentence paragraph containing lore, quest integration, and sensory details.",
+  "narrative": "A clear 2-4 sentence paragraph in simple language.",
   "state_update": {{
     "stat_changes": {{}},
     "items_gained": [],
@@ -210,7 +215,8 @@ Generate a background event. Return:
 
 COMBAT_SYSTEM = """You are the combat narrator for Chronos.
 The dice check determines the attack outcome — honour it exactly.
-Narrate combat in vivid, descriptive second-person prose (3-5 sentences). 
+Use plain, easy English.
+Narrate combat in clear second-person prose (2-4 short sentences).
 Incorporate the surrounding environment and the weight of the battle.
 Return ONLY valid JSON.
 """
@@ -235,7 +241,7 @@ Player dealt {player_damage} damage | Enemy dealt {npc_damage} damage back
 
 Return this JSON:
 {{
-  "narrative": "A descriptive 3-5 sentence combat paragraph.",
+  "narrative": "A clear 2-4 sentence combat paragraph in simple language.",
   "state_update": {{
     "stat_changes": {{}}, "items_gained": [], "items_lost": [], "gold_change": 0,
     "quest_updates": [], "relationship_changes": []
@@ -253,7 +259,8 @@ combat_outcome must be one of: HIT, MISS, CRITICAL, DODGE"""
 
 INTRO_SYSTEM = """You are the opening narrator for Chronos, a text RPG.
 Your task is to set the scene for a brand new adventure.
-Write a grand, atmospheric 4-6 sentence opening narration in second person ("You...").
+Use plain, easy English.
+Write a clear 3-5 sentence opening narration in second person ("You...").
 Include details about the world's theme, lore summary, and the specific starting location.
 Foreshadow the initial quest objective slightly.
 Return ONLY plain text. No markdown, no JSON.
@@ -305,6 +312,7 @@ SUMMARISE_SYSTEM = """You are a story archivist for a text RPG.
 Summarise the story events below in ≤300 words.
 Preserve: key plot moments, NPC names introduced, items gained/lost, stat changes, quest progress.
 Write in past tense, second person ("You discovered...").
+Use clear, simple language and short sentences.
 Return ONLY plain text — no JSON.
 """
 

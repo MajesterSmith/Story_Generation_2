@@ -51,7 +51,7 @@ class SidebarWidget(QWidget):
         self.lbl_player_name = QLabel("—")
         self.lbl_player_name.setObjectName("lbl_player_name")
         self.lbl_location    = QLabel("Unknown")
-        self.lbl_location.setStyleSheet("color:#8b949e; font-size:11px;")
+        self.lbl_location.setStyleSheet("color:#d6e3f7; font-size:11px;")
         layout.addWidget(self.lbl_player_name)
         layout.addWidget(self.lbl_location)
         layout.addWidget(_separator())
@@ -75,7 +75,7 @@ class SidebarWidget(QWidget):
         self.hp_bar.setTextVisible(False)
         hp_row.addWidget(self.hp_bar)
         self.lbl_hp = QLabel("100 / 100")
-        self.lbl_hp.setStyleSheet("color:#4ade80; font-size:11px; min-width:72px;")
+        self.lbl_hp.setStyleSheet("color:#86efac; font-size:11px; min-width:72px;")
         hp_row.addWidget(self.lbl_hp)
         stats_l.addLayout(hp_row)
 
@@ -91,7 +91,7 @@ class SidebarWidget(QWidget):
 
         # Gold
         self.lbl_gold = QLabel("◈  50 gold")
-        self.lbl_gold.setStyleSheet("color:#c9a84c; font-size:12px; font-weight:bold;")
+        self.lbl_gold.setStyleSheet("color:#ffd166; font-size:12px; font-weight:bold;")
         stats_l.addWidget(self.lbl_gold)
 
         layout.addWidget(stats_frame)
@@ -106,13 +106,13 @@ class SidebarWidget(QWidget):
         quest_l.setSpacing(6)
         self.lbl_quest_title = QLabel("None")
         self.lbl_quest_title.setWordWrap(True)
-        self.lbl_quest_title.setStyleSheet("color:#c9d1d9; font-weight:bold; font-size:12px;")
+        self.lbl_quest_title.setStyleSheet("color:#f3f7ff; font-weight:bold; font-size:12px;")
         self.lbl_quest_obj   = QLabel("")
         self.lbl_quest_obj.setWordWrap(True)
-        self.lbl_quest_obj.setStyleSheet("color:#8b949e; font-size:11px;")
+        self.lbl_quest_obj.setStyleSheet("color:#d6e3f7; font-size:11px;")
         self.lbl_quest_hint  = QLabel("")
         self.lbl_quest_hint.setWordWrap(True)
-        self.lbl_quest_hint.setStyleSheet("color:#c9a84c; font-style:italic; font-size:11px;")
+        self.lbl_quest_hint.setStyleSheet("color:#ffe08a; font-style:italic; font-size:11px;")
         quest_l.addWidget(self.lbl_quest_title)
         quest_l.addWidget(self.lbl_quest_obj)
         quest_l.addWidget(self.lbl_quest_hint)
@@ -128,7 +128,7 @@ class SidebarWidget(QWidget):
         inv_l.setSpacing(4)
         self.lbl_inventory = QLabel("Empty")
         self.lbl_inventory.setWordWrap(True)
-        self.lbl_inventory.setStyleSheet("color:#8b949e; font-size:11px;")
+        self.lbl_inventory.setStyleSheet("color:#d6e3f7; font-size:11px;")
         inv_l.addWidget(self.lbl_inventory)
         layout.addWidget(inv_frame)
         layout.addWidget(_separator())
@@ -142,14 +142,41 @@ class SidebarWidget(QWidget):
         self.rel_l.setSpacing(6)
         layout.addWidget(rel_frame)
 
+        layout.addWidget(_separator())
+
+        # ── Guidance
+        layout.addWidget(_section_label("WHAT TO DO NEXT"))
+        guide_frame = QFrame()
+        guide_frame.setObjectName("card")
+        guide_l = QVBoxLayout(guide_frame)
+        guide_l.setContentsMargins(10, 10, 10, 10)
+        guide_l.setSpacing(6)
+
+        self.lbl_next_objective = QLabel("Explore and gather information.")
+        self.lbl_next_objective.setWordWrap(True)
+        self.lbl_next_objective.setStyleSheet("color:#f6f9ff; font-size:11px; font-weight:bold;")
+
+        self.lbl_next_lead = QLabel("Lead: Talk to someone nearby.")
+        self.lbl_next_lead.setWordWrap(True)
+        self.lbl_next_lead.setStyleSheet("color:#ffe08a; font-size:11px;")
+
+        self.lbl_next_moves = QLabel("• Talk\n• Explore\n• Travel")
+        self.lbl_next_moves.setWordWrap(True)
+        self.lbl_next_moves.setStyleSheet("color:#dbe8fa; font-size:11px;")
+
+        guide_l.addWidget(self.lbl_next_objective)
+        guide_l.addWidget(self.lbl_next_lead)
+        guide_l.addWidget(self.lbl_next_moves)
+        layout.addWidget(guide_frame)
+
         layout.addStretch()
 
     def _stat_pill(self, name: str, value: int) -> QLabel:
         lbl = QLabel(f"{name}\n{value}")
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lbl.setStyleSheet(
-            "background:#21262d; border:1px solid #30363d; border-radius:6px;"
-            "color:#c9d1d9; font-size:11px; padding:4px 8px;"
+            "background:#2d405f; border:1px solid #5f7ea8; border-radius:6px;"
+            "color:#f3f7ff; font-size:11px; padding:4px 8px;"
         )
         lbl.setFixedWidth(64)
         return lbl
@@ -208,7 +235,7 @@ class SidebarWidget(QWidget):
                 rl.setContentsMargins(0, 0, 0, 0)
                 
                 name_lbl = QLabel(npc["name"])
-                name_lbl.setStyleSheet("color:#e2e8f0; font-size:11px; font-weight:bold;")
+                name_lbl.setStyleSheet("color:#f6f9ff; font-size:11px; font-weight:bold;")
                 
                 score = npc.get("relationship_score", 0)
                 tier_name, color = self._get_tier_style(score)
@@ -222,7 +249,7 @@ class SidebarWidget(QWidget):
                 self.rel_l.addWidget(row)
         else:
             no_rels = QLabel("No known allies or enemies.")
-            no_rels.setStyleSheet("color:#4b5563; font-style:italic; font-size:11px;")
+            no_rels.setStyleSheet("color:#c0d2ec; font-style:italic; font-size:11px;")
             self.rel_l.addWidget(no_rels)
 
     def _get_tier_style(self, score: int) -> tuple[str, str]:
@@ -233,3 +260,9 @@ class SidebarWidget(QWidget):
         if score <= 20:  return "Friendly",     "#22c55e"
         if score <= 50:  return "Ally",         "#3b82f6"
         return "Kin/Soulmate", "#a855f7"
+
+    def update_guidance(self, objective: str, lead: str, moves: list[str]):
+        self.lbl_next_objective.setText(objective or "Explore and gather information.")
+        self.lbl_next_lead.setText(f"Lead: {lead or 'Talk to someone nearby.'}")
+        rendered_moves = moves[:3] if moves else ["Talk to a nearby NPC", "Explore this area", "Check your quest log"]
+        self.lbl_next_moves.setText("\n".join(f"• {m}" for m in rendered_moves))

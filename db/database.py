@@ -48,6 +48,7 @@ def init_db():
             faction_id    INTEGER,
             name          TEXT NOT NULL,
             description   TEXT DEFAULT '',
+            current_location TEXT DEFAULT '',
             traits        TEXT DEFAULT '[]',
             strength      INTEGER DEFAULT 10,
             intelligence  INTEGER DEFAULT 10,
@@ -217,3 +218,18 @@ def init_db():
             conn.execute("ALTER TABLE npcs ADD COLUMN goal TEXT DEFAULT 'Survive and thrive.'")
         except sqlite3.OperationalError:
             pass
+
+        # Migration: Add current_location to npcs if not exists
+        try:
+            conn.execute("ALTER TABLE npcs ADD COLUMN current_location TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+
+        # Backfill existing NPC locations where missing
+        conn.execute(
+            """UPDATE npcs
+               SET current_location = (
+                   SELECT w.starting_location FROM worlds w WHERE w.id = npcs.world_id
+               )
+               WHERE current_location IS NULL OR trim(current_location) = ''"""
+        )

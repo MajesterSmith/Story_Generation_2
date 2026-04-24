@@ -46,7 +46,12 @@ class WorldEngine:
 
         # 7. NPCs → track name→id
         npc_map: dict[str, int] = {}
+        fallback_location = seed.starting_location
+        if not fallback_location and seed.locations:
+            fallback_location = seed.locations[0].name
         for npc in seed.npcs:
+            if not npc.current_location:
+                npc.current_location = fallback_location
             fid = faction_map.get(npc.faction_name)
             nid = world_repo.create_npc(world_id, fid, npc)
             npc_map[npc.name] = nid

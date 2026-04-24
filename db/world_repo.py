@@ -59,11 +59,11 @@ def create_npc(world_id: int, faction_id: int | None, npc: NPCModel) -> int:
     with get_db() as conn:
         cur = conn.execute(
             """INSERT INTO npcs
-               (world_id, faction_id, name, description, traits,
+               (world_id, faction_id, name, description, current_location, traits,
                 strength, intelligence, agility, health, max_health, gold, goal, shop_items)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                world_id, faction_id, npc.name, npc.description, json.dumps(npc.traits),
+                world_id, faction_id, npc.name, npc.description, (npc.current_location or ""), json.dumps(npc.traits),
                 npc.strength, npc.intelligence, npc.agility, npc.health, npc.health,
                 npc.gold, npc.goal, json.dumps(npc.shop_items),
             ),
@@ -105,6 +105,11 @@ def update_npc_health(npc_id: int, health: int):
 def update_npc_relationship(npc_id: int, change: int):
     with get_db() as conn:
         conn.execute("UPDATE npcs SET relationship_score = relationship_score + ? WHERE id = ?", (change, npc_id))
+
+
+def update_npc_location(npc_id: int, location_name: str):
+    with get_db() as conn:
+        conn.execute("UPDATE npcs SET current_location = ? WHERE id = ?", (location_name, npc_id))
 
 
 def update_faction_relationship(faction_id: int, change: int):
@@ -149,6 +154,21 @@ def get_known_npcs(world_id: int) -> list[dict]:
         for r in rows:
             d = dict(r)
             d["traits"]     = json.loads(d.get("traits", "[]"))
+            d["shop_items"] = json.loads(d.get("shop_items", "[]"))
+            result.append(d)
+        return result
+
+
+def get_npcs_at_location(world_id: int, location_name: str) -> list[dict]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM npcs WHERE world_id = ? AND lower(current_location) = ? ORDER BY name ASC",
+            (world_id, location_name.lower()),
+        ).fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["traits"] = json.loads(d.get("traits", "[]"))
             d["shop_items"] = json.loads(d.get("shop_items", "[]"))
             result.append(d)
         return result

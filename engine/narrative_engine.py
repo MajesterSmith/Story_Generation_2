@@ -59,7 +59,7 @@ class NarrativeEngine:
 
         # 6. Apply state updates
         self.sm.apply_updates(player_id, world_id, response.state_update)
-        self._apply_social_updates(world_id, response.state_update)
+        self._apply_social_updates(world_id, response.state_update, player.get("current_location", ""))
 
         # 7. Record long-term story beat
         if selected_beat:
@@ -121,13 +121,15 @@ class NarrativeEngine:
         if score <= 50:  return "Ally"
         return "Kin/Soulmate"
 
-    def _apply_social_updates(self, world_id: int, state: "StateUpdate"):
+    def _apply_social_updates(self, world_id: int, state: "StateUpdate", player_location: str = ""):
         # 1. Individual NPC updates
         if state.npc_interacted_name:
             npc = world_repo.get_npc_by_name(world_id, state.npc_interacted_name)
             if npc:
                 if state.npc_relationship_change != 0:
                     world_repo.update_npc_relationship(npc["id"], state.npc_relationship_change)
+                if player_location:
+                    world_repo.update_npc_location(npc["id"], player_location)
                 if state.npc_memory_summary:
                     turn_num = story_repo.get_next_turn_number(world_id)
                     world_repo.add_npc_memory(npc["id"], world_id, turn_num, 
